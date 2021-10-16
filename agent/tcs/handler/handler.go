@@ -129,7 +129,7 @@ func startSession(
 		seelog.Errorf("Error connecting to TCS: %v", err.Error())
 		return err
 	}
-	seelog.Info("Connected to TCS endpoint")
+	seelog.Info("Inez's Connected to TCS endpoint")
 	// start a timer and listens for tcs heartbeats/acks. The timer is reset when
 	// we receive a heartbeat from the server or when a publish metrics message
 	// is acked.

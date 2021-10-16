@@ -351,7 +351,7 @@ func (acsSession *session) startACSSession(client wsclient.ClientServer) error {
 		return err
 	}
 
-	seelog.Info("Connected to ACS endpoint")
+	seelog.Info("Inez's Connected to ACS endpoint")
 	// Start inactivity timer for closing the connection
 	timer := newDisconnectionTimer(client, acsSession.heartbeatTimeout(), acsSession.heartbeatJitter())
 	// Any message from the server resets the disconnect timeout
