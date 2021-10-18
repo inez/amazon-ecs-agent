@@ -1573,7 +1573,9 @@ func (task *Task) getDockerResources(container *apicontainer.Container, cfg *con
 		}
 		resources.DeviceRequests = []dockercontainer.DeviceRequest{deviceRequest}
 	}
-	resources.CpusetCpus = "0-80"
+	// resources.CpusetCpus = "0-80"
+	resources.CPUPeriod = 100000
+	resources.CPUQuota = 300000
 	return resources
 }
 
