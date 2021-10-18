@@ -1041,7 +1041,7 @@ func (engine *DockerTaskEngine) updateContainerReference(pullSucceeded bool, con
 }
 
 func (engine *DockerTaskEngine) createContainer(task *apitask.Task, container *apicontainer.Container) dockerapi.DockerContainerMetadata {
-	seelog.Infof("Inez's Task engine [%s]: creating container: %s", task.Arn, container.Name)
+	seelog.Infof("Inez's V2 Task engine [%s]: creating container: %s", task.Arn, container.Name)
 	client := engine.client
 	if container.DockerConfig.Version != nil {
 		client = client.WithVersion(dockerclient.DockerVersion(*container.DockerConfig.Version))
