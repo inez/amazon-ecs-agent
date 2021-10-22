@@ -132,9 +132,10 @@ type DockerTaskEngine struct {
 	// current state and mappings to/from dockerId and name.
 	// This is used to checkpoint state to disk so tasks may survive agent
 	// failures or updates
-	state        dockerstate.TaskEngineState
-	managedTasks map[string]*managedTask
-	indexToArn   map[int]string
+	state          dockerstate.TaskEngineState
+	managedTasks   map[string]*managedTask
+	indexToArn     map[int]string
+	indexToArnLock sync.Mutex
 
 	taskStopGroup *utilsync.SequentialWaitGroup
 
@@ -233,14 +234,14 @@ func NewDockerTaskEngine(cfg *config.Config,
 }
 
 func (engine *DockerTaskEngine) addByArn(arn string) int {
-	engine.tasksLock.RLock()
+	engine.indexToArnLock.Lock()
 	index := 0
 	for {
 		_, ok := engine.indexToArn[index]
 		if !ok {
 			engine.indexToArn[index] = arn
 			seelog.Infof("Task engine addByArn %s %d (%v)", arn, index, engine.indexToArn)
-			engine.tasksLock.RUnlock()
+			engine.indexToArnLock.Unlock()
 			return index
 		}
 		index++
@@ -248,14 +249,14 @@ func (engine *DockerTaskEngine) addByArn(arn string) int {
 }
 
 func (engine *DockerTaskEngine) removeByArn(arn string) {
-	engine.tasksLock.RLock()
+	engine.indexToArnLock.Lock()
 	for key, value := range engine.indexToArn {
 		if value == arn {
 			delete(engine.indexToArn, key)
 			seelog.Infof("Task engine removeByArn %s %d (%v)", arn, key, engine.indexToArn)
 		}
 	}
-	engine.tasksLock.RUnlock()
+	engine.indexToArnLock.Unlock()
 }
 
 func (engine *DockerTaskEngine) initializeContainerStatusToTransitionFunction() {
