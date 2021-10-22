@@ -234,14 +234,13 @@ func NewDockerTaskEngine(cfg *config.Config,
 
 func (engine *DockerTaskEngine) addByArn(arn string) int {
 	engine.tasksLock.RLock()
-	defer engine.tasksLock.RUnlock()
-
 	index := 0
 	for {
 		_, ok := engine.indexToArn[index]
 		if !ok {
 			engine.indexToArn[index] = arn
-			seelog.Infof("Task engine addByArn %s %s", arn, index)
+			seelog.Infof("Task engine addByArn %s %d (%v)", arn, index, engine.indexToArn)
+			engine.tasksLock.RUnlock()
 			return index
 		}
 		index++
@@ -250,14 +249,13 @@ func (engine *DockerTaskEngine) addByArn(arn string) int {
 
 func (engine *DockerTaskEngine) removeByArn(arn string) {
 	engine.tasksLock.RLock()
-	defer engine.tasksLock.RUnlock()
-
 	for key, value := range engine.indexToArn {
 		if value == arn {
-			seelog.Infof("Task engine removeByArn %s %s", arn, key)
 			delete(engine.indexToArn, key)
+			seelog.Infof("Task engine removeByArn %s %d (%v)", arn, key, engine.indexToArn)
 		}
 	}
+	engine.tasksLock.RUnlock()
 }
 
 func (engine *DockerTaskEngine) initializeContainerStatusToTransitionFunction() {
