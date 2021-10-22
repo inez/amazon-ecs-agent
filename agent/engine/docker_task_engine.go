@@ -240,7 +240,7 @@ func (engine *DockerTaskEngine) addByArn(arn string) int {
 		_, ok := engine.indexToArn[index]
 		if !ok {
 			engine.indexToArn[index] = arn
-			seelog.Infof("Task engine addByArn %s %d (%v)", arn, index, engine.indexToArn)
+			seelog.Infof("Task engine addByArn %d - %s (%v)", index, arn, engine.indexToArn)
 			engine.indexToArnLock.Unlock()
 			return index
 		}
@@ -253,7 +253,7 @@ func (engine *DockerTaskEngine) removeByArn(arn string) {
 	for key, value := range engine.indexToArn {
 		if value == arn {
 			delete(engine.indexToArn, key)
-			seelog.Infof("Task engine removeByArn %s %d (%v)", arn, key, engine.indexToArn)
+			seelog.Infof("Task engine removeByArn %d - %s (%v)", key, arn, engine.indexToArn)
 		}
 	}
 	engine.indexToArnLock.Unlock()
