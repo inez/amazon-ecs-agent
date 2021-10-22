@@ -134,6 +134,7 @@ type DockerTaskEngine struct {
 	// failures or updates
 	state        dockerstate.TaskEngineState
 	managedTasks map[string]*managedTask
+	indexToArn   map[int]string
 
 	taskStopGroup *utilsync.SequentialWaitGroup
 
@@ -201,8 +202,10 @@ func NewDockerTaskEngine(cfg *config.Config,
 		client:     client,
 		dataClient: data.NewNoopClient(),
 
-		state:             state,
-		managedTasks:      make(map[string]*managedTask),
+		state:        state,
+		managedTasks: make(map[string]*managedTask),
+		indexToArn:   make(map[int]string),
+
 		taskStopGroup:     utilsync.NewSequentialWaitGroup(),
 		stateChangeEvents: make(chan statechange.Event),
 
@@ -227,6 +230,26 @@ func NewDockerTaskEngine(cfg *config.Config,
 	dockerTaskEngine.initializeContainerStatusToTransitionFunction()
 
 	return dockerTaskEngine
+}
+
+func (engine *DockerTaskEngine) addByArn(arn string) int {
+	index := 0
+	for {
+		_, ok := engine.indexToArn[index]
+		if !ok {
+			engine.indexToArn[index] = arn
+			return index
+		}
+		index++
+	}
+}
+
+func (engine *DockerTaskEngine) removeByArn(arn string) {
+	for key, value := range engine.indexToArn {
+		if value == arn {
+			delete(engine.indexToArn, key)
+		}
+	}
 }
 
 func (engine *DockerTaskEngine) initializeContainerStatusToTransitionFunction() {
@@ -1185,6 +1208,9 @@ func (engine *DockerTaskEngine) createContainer(task *apitask.Task, container *a
 		}
 	}
 
+	var index int = taskEngine.addByArn(task.Arn)
+	hostConfig.Resources.CpusetCpus = fmt.Sprintf("%v,%v,%v", index*3, index*3+1, index*3+2)
+
 	if execcmd.IsExecEnabledContainer(container) {
 		tID, err := task.GetID()
 		if err != nil {
@@ -1634,6 +1660,8 @@ func (engine *DockerTaskEngine) stopDockerContainer(dockerID, containerName stri
 
 func (engine *DockerTaskEngine) removeContainer(task *apitask.Task, container *apicontainer.Container) error {
 	seelog.Infof("Task engine [%s]: removing container: %s", task.Arn, container.Name)
+
+	engine.removeByArn(task.Arn)
 
 	dockerID, err := engine.getDockerID(task, container)
 	if err != nil {
