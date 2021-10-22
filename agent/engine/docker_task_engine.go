@@ -1609,8 +1609,6 @@ func (engine *DockerTaskEngine) inspectContainer(task *apitask.Task, container *
 func (engine *DockerTaskEngine) stopContainer(task *apitask.Task, container *apicontainer.Container) dockerapi.DockerContainerMetadata {
 	seelog.Infof("Task engine [%s]: stopping container [%s]", task.Arn, container.Name)
 
-	engine.removeByArn(task.Arn)
-
 	dockerID, err := engine.getDockerID(task, container)
 	if err != nil {
 		return dockerapi.DockerContainerMetadata{
