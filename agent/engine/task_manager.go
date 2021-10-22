@@ -239,6 +239,7 @@ func (mtask *managedTask) overseeTask() {
 	logger.Info("Managed task has reached stopped; waiting for container cleanup", logger.Fields{
 		field.TaskARN: mtask.Arn,
 	})
+	mtask.engine.removeByArn(mtask.Arn)
 	mtask.engine.checkTearDownPauseContainer(mtask.Task)
 	mtask.cleanupCredentials()
 	if mtask.StopSequenceNumber != 0 {
@@ -251,7 +252,6 @@ func (mtask *managedTask) overseeTask() {
 	// TODO: make this idempotent on agent restart
 	go mtask.releaseIPInIPAM()
 	mtask.cleanupTask(retry.AddJitter(mtask.cfg.TaskCleanupWaitDuration, mtask.cfg.TaskCleanupWaitDurationJitter))
-	mtask.engine.removeByArn(mtask.Arn)
 }
 
 // shouldExit checks if the task manager should exit, as the agent is exiting.
