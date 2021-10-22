@@ -111,6 +111,13 @@ const (
 	stopContainerMaxRetryCount     = 5
 )
 
+type IndexToArnSafe struct {
+	mu sync.Mutex
+	v  map[int]string
+}
+
+var indexToArnSafe = IndexToArnSafe{v: make(map[int]string)}
+
 var newExponentialBackoff = retry.NewExponentialBackoff
 
 // DockerTaskEngine is a state machine for managing a task and its containers
@@ -132,10 +139,8 @@ type DockerTaskEngine struct {
 	// current state and mappings to/from dockerId and name.
 	// This is used to checkpoint state to disk so tasks may survive agent
 	// failures or updates
-	state          dockerstate.TaskEngineState
-	managedTasks   map[string]*managedTask
-	indexToArn     map[int]string
-	indexToArnLock sync.Mutex
+	state        dockerstate.TaskEngineState
+	managedTasks map[string]*managedTask
 
 	taskStopGroup *utilsync.SequentialWaitGroup
 
@@ -205,7 +210,6 @@ func NewDockerTaskEngine(cfg *config.Config,
 
 		state:        state,
 		managedTasks: make(map[string]*managedTask),
-		indexToArn:   make(map[int]string),
 
 		taskStopGroup:     utilsync.NewSequentialWaitGroup(),
 		stateChangeEvents: make(chan statechange.Event),
@@ -234,14 +238,14 @@ func NewDockerTaskEngine(cfg *config.Config,
 }
 
 func (engine *DockerTaskEngine) addByArn(arn string) int {
-	engine.indexToArnLock.Lock()
+	indexToArnSafe.mu.Lock()
+	defer indexToArnSafe.mu.Unlock()
 	index := 0
 	for {
-		_, ok := engine.indexToArn[index]
+		_, ok := indexToArnSafe.v[index]
 		if !ok {
-			engine.indexToArn[index] = arn
-			seelog.Infof("Task engine addByArn %d - %s (%v)", index, arn, engine.indexToArn)
-			engine.indexToArnLock.Unlock()
+			indexToArnSafe.v[index] = arn
+			seelog.Infof("Task engine addByArn %d - %s (%d)", index, arn, len(indexToArnSafe.v))
 			return index
 		}
 		index++
@@ -249,14 +253,14 @@ func (engine *DockerTaskEngine) addByArn(arn string) int {
 }
 
 func (engine *DockerTaskEngine) removeByArn(arn string) {
-	engine.indexToArnLock.Lock()
-	for key, value := range engine.indexToArn {
+	indexToArnSafe.mu.Lock()
+	defer indexToArnSafe.mu.Unlock()
+	for key, value := range indexToArnSafe.v {
 		if value == arn {
-			delete(engine.indexToArn, key)
-			seelog.Infof("Task engine removeByArn %d - %s (%v)", key, arn, engine.indexToArn)
+			delete(indexToArnSafe.v, key)
+			seelog.Infof("Task engine removeByArn %d - %s (%d)", key, arn, len(indexToArnSafe.v))
 		}
 	}
-	engine.indexToArnLock.Unlock()
 }
 
 func (engine *DockerTaskEngine) initializeContainerStatusToTransitionFunction() {

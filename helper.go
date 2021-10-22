@@ -2,25 +2,32 @@ package main
 
 import (
 	"fmt"
+	"sync"
 )
 
+type IndexToArnSafe struct {
+	mu sync.Mutex
+	v  map[int]string
+}
+
+var indexToArnSafe = IndexToArnSafe{v: make(map[int]string)}
+
 type DockerTaskEngine struct {
-	indexToArn map[int]string
 }
 
 func NewDockerTaskEngine() *DockerTaskEngine {
-	dockerTaskEngine := &DockerTaskEngine{
-		indexToArn: make(map[int]string),
-	}
+	dockerTaskEngine := &DockerTaskEngine{}
 	return dockerTaskEngine
 }
 
 func (engine *DockerTaskEngine) addByArn(arn string) int {
+	indexToArnSafe.mu.Lock()
+	defer indexToArnSafe.mu.Unlock()
 	index := 0
 	for {
-		_, ok := engine.indexToArn[index]
+		_, ok := indexToArnSafe.v[index]
 		if !ok {
-			engine.indexToArn[index] = arn
+			indexToArnSafe.v[index] = arn
 			return index
 		}
 		index++
@@ -28,9 +35,11 @@ func (engine *DockerTaskEngine) addByArn(arn string) int {
 }
 
 func (engine *DockerTaskEngine) removeByArn(arn string) {
-	for key, value := range engine.indexToArn {
+	indexToArnSafe.mu.Lock()
+	defer indexToArnSafe.mu.Unlock()
+	for key, value := range indexToArnSafe.v {
 		if value == arn {
-			delete(engine.indexToArn, key)
+			delete(indexToArnSafe.v, key)
 		}
 	}
 }
@@ -38,9 +47,9 @@ func (engine *DockerTaskEngine) removeByArn(arn string) {
 func main() {
 	fmt.Println("Hello, playground")
 	taskEngine := NewDockerTaskEngine()
-	fmt.Println("indexToArn:", taskEngine.indexToArn)
-	// taskEngine.addByArn("t0")
+	fmt.Println("global_MAP:", indexToArnSafe.v)
+	taskEngine.addByArn("t0")
 	var index int = taskEngine.addByArn("t0")
 	fmt.Sprintf("%v,%v,%v", index*3, index*3+1, index*3+2)
-	fmt.Println("indexToArn:", taskEngine.indexToArn)
+	fmt.Println("global_MAP:", indexToArnSafe.v)
 }
