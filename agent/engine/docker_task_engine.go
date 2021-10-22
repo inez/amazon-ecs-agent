@@ -238,6 +238,7 @@ func (engine *DockerTaskEngine) addByArn(arn string) int {
 		_, ok := engine.indexToArn[index]
 		if !ok {
 			engine.indexToArn[index] = arn
+			seelog.Infof("Task engine addByArn %s %s", arn, index)
 			return index
 		}
 		index++
@@ -247,6 +248,7 @@ func (engine *DockerTaskEngine) addByArn(arn string) int {
 func (engine *DockerTaskEngine) removeByArn(arn string) {
 	for key, value := range engine.indexToArn {
 		if value == arn {
+			seelog.Infof("Task engine removeByArn %s %s", arn, key)
 			delete(engine.indexToArn, key)
 		}
 	}
@@ -1208,7 +1210,7 @@ func (engine *DockerTaskEngine) createContainer(task *apitask.Task, container *a
 		}
 	}
 
-	var index int = taskEngine.addByArn(task.Arn)
+	var index int = engine.addByArn(task.Arn)
 	hostConfig.Resources.CpusetCpus = fmt.Sprintf("%v,%v,%v", index*3, index*3+1, index*3+2)
 
 	if execcmd.IsExecEnabledContainer(container) {
