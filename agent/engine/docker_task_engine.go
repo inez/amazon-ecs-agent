@@ -233,6 +233,9 @@ func NewDockerTaskEngine(cfg *config.Config,
 }
 
 func (engine *DockerTaskEngine) addByArn(arn string) int {
+	engine.tasksLock.RLock()
+	defer engine.tasksLock.RUnlock()
+
 	index := 0
 	for {
 		_, ok := engine.indexToArn[index]
@@ -246,6 +249,9 @@ func (engine *DockerTaskEngine) addByArn(arn string) int {
 }
 
 func (engine *DockerTaskEngine) removeByArn(arn string) {
+	engine.tasksLock.RLock()
+	defer engine.tasksLock.RUnlock()
+
 	for key, value := range engine.indexToArn {
 		if value == arn {
 			seelog.Infof("Task engine removeByArn %s %s", arn, key)
