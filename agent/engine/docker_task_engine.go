@@ -1220,7 +1220,7 @@ func (engine *DockerTaskEngine) createContainer(task *apitask.Task, container *a
 	}
 
 	index := engine.addByArn(task.Arn)
-	hostConfig.Resources.CpusetCpus = fmt.Sprintf("%v,%v,%v", index*3, index*3+1, index*3+2)
+	hostConfig.Resources.CpusetCpus = fmt.Sprintf("%v,%v,%v,%v,%v", index*5, index*5+1, index*5+2, index*5+3, index*5+4)
 
 	if execcmd.IsExecEnabledContainer(container) {
 		tID, err := task.GetID()
