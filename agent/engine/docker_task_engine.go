@@ -1222,8 +1222,8 @@ func (engine *DockerTaskEngine) createContainer(task *apitask.Task, container *a
 
 	index := engine.addByArn(task.Arn)
 	hostConfig.Resources.CpusetCpus = fmt.Sprintf("%v,%v,%v", index*3, index*3+1, index*3+2)
-	hostConfig.Resources.BlkioDeviceReadIOps = []*blkiodev.ThrottleDevice{blkiodev.ThrottleDevice{"/dev/md0", 28000}}  // 1,400,000 / 50
-	hostConfig.Resources.BlkioDeviceWriteIOps = []*blkiodev.ThrottleDevice{blkiodev.ThrottleDevice{"/dev/md0", 13600}} // 680,000 / 50
+	hostConfig.Resources.BlkioDeviceReadIOps = []*blkiodev.ThrottleDevice{&blkiodev.ThrottleDevice{"/dev/md0", 28000}}  // 1,400,000 / 50
+	hostConfig.Resources.BlkioDeviceWriteIOps = []*blkiodev.ThrottleDevice{&blkiodev.ThrottleDevice{"/dev/md0", 13600}} // 680,000 / 50
 
 	if execcmd.IsExecEnabledContainer(container) {
 		tID, err := task.GetID()
